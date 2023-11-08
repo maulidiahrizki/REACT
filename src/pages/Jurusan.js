@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const token = localStorage.getItem('token');
+axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
 function Jurusan(){
     const [jrs, setJrsn] = useState([]);
     // const url = "http://localhost:3000/static/";
@@ -10,9 +13,17 @@ function Jurusan(){
         fectData();
     }, []);
     const fectData = async () => {
-        const response1 = await axios.get('http://localhost:3000/api/jrs');
-        const data1 = await response1.data.data;
-        setJrsn(data1);
+        try {
+            const headers = {
+              Authorization: `Bearer ${token}`,
+            };
+            const response1 = await axios.get('http://localhost:3000/api/jrs', {headers});
+             const data1 = await response1.data.data;
+            setJrsn(data1);
+        } catch (error) {
+            // Tangani kesalahan permintaan data
+            console.error('Gagal mengambil data:', error);
+          }
     }
 
     const [show, setShow] = useState(false);
@@ -37,7 +48,8 @@ function Jurusan(){
                 try {
                 const response = await axios.post('http://localhost:3000/api/jrs/store', formData, {
                     headers: {
-                    'Content-Type': 'application/json', 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                     },
                 });
             
@@ -90,9 +102,10 @@ function Jurusan(){
         await axios.patch(`http://localhost:3000/api/jrs/update/${editData.id_j}`, formData, {
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
             },
         });
-        navigate('/jrsn');
+        navigate('/jrs');
         fectData();
         setShowEditModal(false);
         } catch (error) {
@@ -103,7 +116,11 @@ function Jurusan(){
     
     const handleDelete = (id) => {
         axios
-        .delete(`http://localhost:3000/api/jrs/delete/${id}`)
+        .delete(`http://localhost:3000/api/jrs/delete/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+              }
+        })
         .then((response) => {
             console.log('Data berhasil dihapus');
             //Hapus item dari array data jrs
@@ -117,34 +134,46 @@ function Jurusan(){
     };
     
     return(
-        <Container>
-            <Row>
-                <Col><h2 class= "justify-content-center">DATA JURUSAN</h2></Col>
-                <Button variant="primary" onClick={handleShow}>Tambah</Button>
-                <Col>
-                <table className="table">
-                    <thead>
-                        <tr>
-                        <th scope="col">No</th>
-                        <th scope="col">ID</th>
-                        <th scope="col">Nama Jurusan</th>
-                        <th scope="col" colSpan={2}>ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {jrs.map((jrsn, index) => (
-                        <tr key={jrsn.id_j}>
-                            <td>{index + 1}</td>
-                            <td>{ jrsn.id_j}</td>
-                            <td>{ jrsn.nama_jurusan}</td>
-                            <td> <button onClick={() => handleShowEditModal(jrsn)} className='btn btn-sm btn-info'>Edit</button></td>
-                            <td> <button onClick={() => handleDelete(jrsn.id_j)} className='btn btn-sm btn-danger' >Hapus</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                </Col>
-            </Row>
+        <Container className="my-4">
+        <Row>
+          <Col>
+            <div className="my-4 p-3 border bg-light">
+              <h2 className="text-center">Data Jurusan</h2>
+            </div>
+          </Col>
+        </Row>
+        <Row>
+            <Col>
+            <table className="table table-bordered table-striped table-hover mt-4">
+                <thead>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nama Jurusan</th>
+                    <th scope="col" colSpan={1}>Edit Data</th>
+                    <th scope="col" colSpan={1}>Delete Data</th>
+                </tr>
+                </thead>
+                <tbody>
+                {jrs.map((jrsn, index) => (
+                    <tr key={jrsn.id_j}>
+                    <td>{index + 1}</td>
+                    <td>{jrsn.id_j}</td>
+                    <td>{jrsn.nama_jurusan}</td>
+                    <td>
+                        <button onClick={() => handleShowEditModal(jrsn)} className="btn btn-info">Edit</button>
+                    </td>
+                    <td>
+                        <button onClick={() => handleDelete(jrsn.id_j)} className="btn btn-danger">Hapus</button>
+                    </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+            </Col>
+            <Button variant="success" onClick={handleShow}>Tambah</Button>
+        </Row>
+            
 
             {/* tambahData */}
             <Modal show={show} onHide={handleClose}>
